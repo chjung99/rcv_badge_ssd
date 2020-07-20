@@ -154,13 +154,7 @@ class PredictionConvolutions(nn.Module):
         
         super(PredictionConvolutions, self).__init__()
         
-#         n_boxes={'conv4_3'=4,
-#                 'conv7'=6,
-#                 'conv8_2'=6,
-#                 'conv9_2'=6,
-#                 'conv10_2'=4,
-#                 'conv11_2'=4,
-#                 }
+
         self.l_conv4_3=nn.Conv2d(512,4*4,kernel_size=3,padding=1)
         self.l_conv7=nn.Conv2d(1024,6*4,kernel_size=3,padding=1)
         self.l_conv8_2=nn.Conv2d(512,6*4,kernel_size=3,padding=1)
@@ -182,12 +176,153 @@ class PredictionConvolutions(nn.Module):
             if isinstance(c, nn.Conv2d):
                 nn.init.xavier_uniform_(c.weight)
                 nn.init.constant_(c.bias, 0.)
-#     def forward(self, conv4_3_feats, conv7_feats, conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats):
-    def forward(self, conv4_3_feats):
+                
+    def forward(self, conv4_3_feats, conv7_feats, conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats):
+
         batch_size=conv4_3_feats.size(0)
-        l_conv4_3=self.l_conv4_3(conv4_3_feats)#(N,16,38,38)
-        l_conv4_3=l_conv4_3.permute(0,2,3,1)#(N,38,38,16)
-        l_conv4_3=l_conv4_3.view(batch_size,-1,4)
         
-        import pdb;pdb.set_trace()
+        l_conv4_3=self.l_conv4_3(conv4_3_feats)#(N,16,38,38)
+        l_conv4_3=l_conv4_3.permute(0,2,3,1).contiguous()#(N,38,38,16)
+        l_conv4_3=l_conv4_3.view(batch_size,-1,4)
+        #contiguous=>for #RuntimeError: view size is not compatible with input tensor's size and stride (at least one dimension spans across two contiguous subspaces). Use .reshape(...) instead.
+        l_conv7=self.l_conv7(conv7_feats)#(N,24,10,10)
+        l_conv7=l_conv7.permute(0,2,3,1).contiguous()#(N,10,10,24)
+        l_conv7=l_conv7.view(batch_size,-1,4)
+        
+        l_conv8_2=self.l_conv8_2(conv8_2_feats)#(N,24,10,10)
+        l_conv8_2=l_conv8_2.permute(0,2,3,1).contiguous()#(N,10,10,24)
+        l_conv8_2=l_conv8_2.view(batch_size,-1,4)
+        
+        l_conv9_2=self.l_conv9_2(conv9_2_feats)#(N,24,10,10)
+        l_conv9_2=l_conv9_2.permute(0,2,3,1).contiguous()#(N,10,10,24)
+        l_conv9_2=l_conv9_2.view(batch_size,-1,4)
+        
+        l_conv10_2=self.l_conv10_2(conv10_2_feats)#(N,24,10,10)
+        l_conv10_2=l_conv10_2.permute(0,2,3,1).contiguous()#(N,10,10,24)
+        l_conv10_2=l_conv10_2.view(batch_size,-1,4)
+        
+        l_conv11_2=self.l_conv11_2(conv11_2_feats)#(N,24,10,10)
+        l_conv11_2=l_conv11_2.permute(0,2,3,1).contiguous()#(N,10,10,24)
+        l_conv11_2=l_conv11_2.view(batch_size,-1,4)
+        
+        
+        c_conv4_3=self.c_conv4_3(conv4_3_feats)#(N,4*21,38,38)
+        c_conv4_3=c_conv4_3.permute(0,2,3,1).contiguous()#(N,38,38,16)
+        c_conv4_3=c_conv4_3.view(batch_size,-1,21)
+        
+        c_conv7=self.c_conv7(conv7_feats)#(N,24,10,10)
+        c_conv7=c_conv7.permute(0,2,3,1).contiguous()#(N,10,10,24)
+        c_conv7=c_conv7.view(batch_size,-1,21)
+        
+        c_conv8_2=self.c_conv8_2(conv8_2_feats)#(N,24,10,10)
+        c_conv8_2=c_conv8_2.permute(0,2,3,1).contiguous()#(N,10,10,24)
+        c_conv8_2=c_conv8_2.view(batch_size,-1,21)
+        
+        c_conv9_2=self.c_conv9_2(conv9_2_feats)#(N,24,10,10)
+        c_conv9_2=c_conv9_2.permute(0,2,3,1).contiguous()#(N,10,10,24)
+        c_conv9_2=c_conv9_2.view(batch_size,-1,21)
+        
+        c_conv10_2=self.c_conv10_2(conv10_2_feats)#(N,24,10,10)
+        c_conv10_2=c_conv10_2.permute(0,2,3,1).contiguous()#(N,10,10,24)
+        c_conv10_2=c_conv10_2.view(batch_size,-1,21)
+        
+        c_conv11_2=self.c_conv11_2(conv11_2_feats)#(N,24,10,10)
+        c_conv11_2=c_conv11_2.permute(0,2,3,1).contiguous()#(N,10,10,24)
+        c_conv11_2=c_conv11_2.view(batch_size,-1,21)
+        
+        locs=torch.cat([l_conv4_3, l_conv7, l_conv8_2, l_conv9_2, l_conv10_2, l_conv11_2],dim=1)
+        classes_scores=torch.cat([c_conv4_3, c_conv7, c_conv8_2, c_conv9_2, c_conv10_2, c_conv11_2],dim=1)
+        
+        return locs,classes_scores
+        
+class SSD300(nn.Module):
+    def __init__(self):
+        super(SSD300,self).__init__()
+        self.base=VGGBase()
+        self.aux=AuxiliaryConvolutions()
+        self.pred=PredictionConvolutions()
+        self.priors_cxcy=self.create_prior_boxes()
+    def forward(self,image):
+        conv4_3,conv7=self.base(image)
+        conv8_2,conv9_2,conv10_2,conv11_2=self.aux(conv7)
+        locs,classes_scores=self.pred(conv4_3,conv7,conv8_2,conv9_2,conv10_2,conv11_2)#(N,8732,4),(N,8732,21)
+        
+        return locs,classes_scores
+    def create_prior_boxes(self):
+        fmaps_dims = {'conv4_3': 38,
+                     'conv7': 19,
+                     'conv8_2': 10,
+                     'conv9_2': 5,
+                     'conv10_2': 3,
+                     'conv11_2': 1}
+
+        obj_scales = {'conv4_3': 0.1,
+                      'conv7': 0.2,
+                      'conv8_2': 0.375,
+                      'conv9_2': 0.55,
+                      'conv10_2': 0.725,
+                      'conv11_2': 0.9}
+
+        aspect_ratios = {'conv4_3': [1., 2., 0.5],
+                         'conv7': [1., 2., 3., 0.5, .333],
+                         'conv8_2': [1., 2., 3., 0.5, .333],
+                         'conv9_2': [1., 2., 3., 0.5, .333],
+                         'conv10_2': [1., 2., 0.5],
+                         'conv11_2': [1., 2., 0.5]}
+
+        fmaps = list(fmaps_dims.keys())
+
+        prior_boxes = []
+        
+        for k,fmap in enumerate(fmaps):
+            for i in range(fmaps_dims[fmap]):
+                for j in range(fmaps_dims[fmap]):
+                    cx=(j+0.5)/fmaps_dims[fmap]
+                    cy=(i+0.5)/fmaps_dims[fmap]
+                    for ratio in aspect_ratios[fmap]:
+                        w=obj_scales[fmap]*sqrt(ratio)
+                        h=obj_scales[fmap]/sqrt(ratio)
+                        prior_boxes.append([cx,cy,w,h])
+                        if ratio == 1:
+                            try:
+                                w=sqrt(obj_scales[fmaps][k]*obj_scales[fmaps][k+1])
+                                h=w
+                                
+                            except:
+                                
+                                w=1
+                                h=1
+                            prior_boxes.append([cx,cy,w,h])
+        prior_boxes=torch.FloatTensor(prior_boxes).to(device)
+        prior_boxes=prior_boxes.clamp_(0,1)
+        
+        return prior_boxes
+    
+#     def detect_objects(self,predicted_locs,predicted_scores,min_score,max_overlap,top_k):
+
+class MultiBoxLoss(nn.Module):
+    def __init__(self,priors_cxcy,threshold=0.5,neg_pos_ratio=3,alpha=1):
+        super(MultiBoxLoss,self).__init__()
+        self.priors_cxcy=priors_cxcy
+        self.priors_xy=cxcy_to_xy(self.priors_cxcy)
+        
+        self.l1Loss=nn.L1Loss()
+        self.cross_entropy=nn.CrossEntropyLoss()
+        
+    def forward(self,pred_locs,pred_scores,boxes,labels):
+        
+        
+            
+        
+        
+        
+        
+        conf_loss_all=
+        conf_loss_pos=
+        conf_loss_neg=
+        
+        
+        return conf_loss + alpha*loc_loss
+    
+        
         
