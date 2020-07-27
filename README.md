@@ -11,7 +11,8 @@ Sejong RCV Badge SSD project의 목표는 위와 같은 SSD논문 성능 원복�
 
 ![image](https://user-images.githubusercontent.com/62923434/88532151-06927500-d03f-11ea-82c5-2264bc14b24b.png)
 
-학습 시 
+학습 시 learining rate설정은 논문에서와 같은 기준으로 적용했습니다.
+![image](https://user-images.githubusercontent.com/62923434/88532824-3b52fc00-d040-11ea-9fef-fc09b30a0818.png)
 
 
 train 코드로 학습한 클래스 별 최종 성능은 아래와 같습니다.
